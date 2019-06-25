@@ -6,6 +6,7 @@
 	</tr>
 	<tr>
 		<td><img src="/Graphic_Sample/Turing_GUI.png"/></td>
+		<td><img src="/Graphic_Sample/Lista_GUI.png"/></td>
 	</tr>
 </table>
 <img src="/Graphic_Sample/Edit_Chat_GUI.png"/>
