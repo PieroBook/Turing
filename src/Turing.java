@@ -238,11 +238,8 @@ public class Turing extends Frame {
 
         // Listener btn visSezione
         vis.addActionListener(e->{
+            boolean owned = true;
             String file = this.file_choice.getSelectedItem();
-            int notFilename;
-            if((notFilename = file.indexOf(" - (")) != -1){
-                file = file.substring(0,notFilename);
-            }
             int numsez = 0;
             if(section_choice.getSelectedItem().compareTo("Tutte le sezioni")!=0){
                 numsez = Integer.parseInt(section_choice.getSelectedItem());
@@ -255,10 +252,15 @@ public class Turing extends Frame {
                         "Turing - Error",JOptionPane.ERROR_MESSAGE,
                         new ImageIcon("drawable/error.png"));
             }else{
+                int notFilename;
+                if((notFilename = file.indexOf(" - (")) != -1){
+                    file = file.substring(0,notFilename);
+                    owned = false;
+                }
                 try{
                     if(section_choice.getItemCount() == 1)
                         numsez = 0;
-                    riceviSezioneFile(file,numsez);
+                    riceviSezioneFile(file,numsez,owned);
                 }catch (IOException ignored){
                     JOptionPane.showMessageDialog(this, "Errore nel recupero del file!",
                             "Turing - Error",JOptionPane.ERROR_MESSAGE,
@@ -274,11 +276,9 @@ public class Turing extends Frame {
 
         // Listener btn modSezione
         mod.addActionListener(e->{
+            boolean owned = true;
             String file = this.file_choice.getSelectedItem();
-            int notFilename;
-            if((notFilename = file.indexOf(" - (")) != -1){
-                file = file.substring(0,notFilename);
-            }
+            String dirtyFileName = this.file_choice.getSelectedItem();
             int numsez = Integer.parseInt(section_choice.getSelectedItem());
             mutex.lock();
             RispostaTCP response = requestAndReply(
@@ -288,6 +288,11 @@ public class Turing extends Frame {
                         "Turing - Error",JOptionPane.ERROR_MESSAGE,
                         new ImageIcon("drawable/error.png"));
             }else{
+                int notFilename;
+                if((notFilename = file.indexOf(" - (")) != -1){
+                    file = file.substring(0,notFilename);
+                    owned = false;
+                }
                 if(response.getEsito() == 0){
                     String path;
                     String md5 = null;
@@ -295,7 +300,7 @@ public class Turing extends Frame {
                     if(section_choice.getItemCount() == 1)
                         val = 0;
                     try{
-                        path = riceviSezioneFile(file,val);
+                        path = riceviSezioneFile(file,val,owned);
                     }catch (IOException ignored){
                         JOptionPane.showMessageDialog(this, "Errore nel recupero del file!",
                                 "Turing - Error",JOptionPane.ERROR_MESSAGE,
@@ -307,7 +312,7 @@ public class Turing extends Frame {
                         md5 = DigestUtils.md5Hex(is);
                     }catch (IOException ignored){}
                     this.setVisible(false);
-                    new EditFrame(this, file, numsez, md5,response.getNotifiche().get(0));
+                    new EditFrame(this, dirtyFileName, numsez, md5,response.getNotifiche().get(0));
                 }else{
                     JOptionPane.showMessageDialog(this, response.getNotifiche().get(0),
                             "Turing - Info",JOptionPane.INFORMATION_MESSAGE,
@@ -461,13 +466,16 @@ public class Turing extends Frame {
         return response;
     }
 
-    private String riceviSezioneFile(String name, int sez) throws IOException{
+    private String riceviSezioneFile(String name, int sez, boolean owned) throws IOException{
         // Divide nome del documento in nomefile ed estensione
         String[] split = name.split("\\.");
+        // Aggiunge identificativo proprio file
+        String intermedia = "_Docs/";
+        if(owned) intermedia = intermedia+currentUsername+"_";
         // Aggiunge alla stringa il path utente
-        String path = currentUsername+"_Docs/"+split[0]+"_"+sez+"."+split[1];
+        String path = currentUsername+intermedia+split[0]+"_"+sez+"."+split[1];
         if (sez == 0)
-            path = currentUsername+"_Docs/"+name;
+            path = currentUsername+intermedia+name;
         Path filepath = Paths.get(path).toAbsolutePath();
         // Crea FileChannel in ricezione
         FileChannel incoming = FileChannel.open(filepath, StandardOpenOption.CREATE, StandardOpenOption.WRITE,

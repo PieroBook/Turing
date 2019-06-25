@@ -59,13 +59,13 @@ public class UsersDocsHandler implements InterfaceUser {
     }
 
     // Recupera documento di uno specifico utente
-    Documento getDoc(Utente u,String nomeDoc) {
+    Documento getDoc(Utente u,String nomeDoc, boolean owned ){
         for(Documento s: userDoc.get(u.getUsername())){
             if(s.getNomefile().compareTo(nomeDoc) == 0){
                 if(s.getOwner().equals(u.getUsername()))
                     return s;
-                else
-                    return getDoc(registrati.get(s.getOwner()),nomeDoc);
+                else if(!owned)
+                    return getDoc(registrati.get(s.getOwner()),nomeDoc,true);
             }
         }
         return null;

@@ -232,27 +232,28 @@ class Utility {
     }
 
     private static void undoRunningEdit(SocketChannel daServire, String user){
+        // Se client crasha libera l'editing del file su cui stava lavorando
         for(Documento d : TuringServer.usersHandler.getUserDocuments(user)){
+            // Per ogni documento non di proprietà dell'utente recupera il vero documento
             if(d.getOwner().compareTo(user) != 0){
                 Utente owner = TuringServer.usersHandler.getRegisteredUser(d.getOwner());
-                d = TuringServer.usersHandler.getDoc(owner,d.getNomefile());
+                d = TuringServer.usersHandler.getDoc(owner,d.getNomefile(),true);
             }
             for(int i = 1; i<= d.getNumsezioni(); i++){
                 String edituser = d.getEditingUser(i);
-                if(edituser != null) {
-                    if (edituser.compareTo(user) == 0) {
-                        List<String> lst = d.removeEdit(i);
-                        if (lst != null) {
-                            String ntf = "Il documento: " + d.getNomefile() + " sezione: "
-                                    + i + " è ora disponibile per la modifica.";
-                            // Notifica a chi voleva editare il file solo se ancora online
-                            for (String usr : lst)
-                                sendNotification(daServire, usr, ntf, false);
-                            // Richiede cancellazione lista attesa
-                            d.clearAttesa(i);
-                        }
-                        TuringServer.reuseMulticastAddress(d);
+                // Se il documento è in editing da user
+                if(edituser != null && edituser.compareTo(user) == 0) {
+                    List<String> lst = d.removeEdit(i);
+                    if (lst != null) {
+                        String ntf = "Il documento: " + d.getNomefile() + " sezione: "
+                                + i + " è ora disponibile per la modifica.";
+                        // Notifica a chi voleva editare il file solo se ancora online
+                        for (String usr : lst)
+                            sendNotification(daServire, usr, ntf, false);
+                        // Richiede cancellazione lista attesa
+                        d.clearAttesa(i);
                     }
+                    TuringServer.reuseMulticastAddress(d);
                 }
             }
         }

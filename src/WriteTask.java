@@ -52,7 +52,14 @@ public class WriteTask implements Runnable{
                 break;
             }
             case 3 :{ // Modifica sezione
-                Documento d = TuringServer.usersHandler.getDoc(currentUser,richiesta.getNomefile());
+                int notFilename;
+                boolean owned = true;
+                String nomeFile = richiesta.getNomefile();
+                if((notFilename = nomeFile.indexOf(" - (")) != -1){
+                    nomeFile = nomeFile.substring(0,notFilename);
+                    owned = false;
+                }
+                Documento d = TuringServer.usersHandler.getDoc(currentUser,nomeFile,owned);
                 // Devo lavorare sul'oggetto documento dell'owner non sulla "copia" del condivisore
                 Utente owner = TuringServer.usersHandler.getRegisteredUser(d.getOwner());
                 RispostaTCP resp = null;
@@ -73,7 +80,7 @@ public class WriteTask implements Runnable{
                             }
                             //Stampa lato server
                             System.out.println("Utente: "+richiesta.getUsername()+" ha richiesto modifica file: "+
-                                    richiesta.getNomefile());
+                                    nomeFile);
                         }else{
                             List<String> info = new ArrayList<>();
                             String str = "Utente "+useredit+" sta editando la sezione del documento richiesta.";
@@ -105,7 +112,14 @@ public class WriteTask implements Runnable{
             case 4 :{ // Visualizza sezione
                 RispostaTCP resp = null;
                 if( currentUser != null) {
-                    Documento d = TuringServer.usersHandler.getDoc(currentUser,richiesta.getNomefile());
+                    int notFilename;
+                    boolean owned = true;
+                    String nomeFile = richiesta.getNomefile();
+                    if((notFilename = nomeFile.indexOf(" - (")) != -1){
+                        nomeFile = nomeFile.substring(0,notFilename);
+                        owned = false;
+                    }
+                    Documento d = TuringServer.usersHandler.getDoc(currentUser,nomeFile,owned);
                     if (d != null) {
                         try {
                             Utility.sendResponse(daServire, new RispostaTCP(0), richiesta);
@@ -119,10 +133,10 @@ public class WriteTask implements Runnable{
                             Utility.sendNotification(daServire, richiesta.getUsername(), ntf,true);
                         // Stampe lato server OP
                         if (richiesta.getNumsezioni() == 0)
-                            System.out.println("File " + richiesta.getNomefile() + " tutte le sezioni inviate a " +
+                            System.out.println("File " + nomeFile + " tutte le sezioni inviate a " +
                                     richiesta.getUsername());
                         else
-                            System.out.println("File " + richiesta.getNomefile() + " sezione " +
+                            System.out.println("File " + nomeFile + " sezione " +
                                     richiesta.getNumsezioni() + " inviato a " + richiesta.getUsername());
                     }else{
                         List<String> info = new ArrayList<>();
@@ -147,7 +161,7 @@ public class WriteTask implements Runnable{
                     break;
                 }
                 // Recupero il documento
-                Documento d = TuringServer.usersHandler.getDoc(currentUser,richiesta.getNomefile());
+                Documento d = TuringServer.usersHandler.getDoc(currentUser,richiesta.getNomefile(),true);
                 if(d != null){
                     // L'utente e' gia un condivisore del documento
                     if(!d.addShare(richiesta.getCondivisore()))
@@ -197,7 +211,14 @@ public class WriteTask implements Runnable{
             }
             case 9 : // END-EDIT e Update Sezione
             case 10 :{ // END-EDIT
-                Documento d = TuringServer.usersHandler.getDoc(currentUser,richiesta.getNomefile());
+                int notFilename;
+                boolean owned = true;
+                String nomeFile = richiesta.getNomefile();
+                if((notFilename = nomeFile.indexOf(" - (")) != -1){
+                    nomeFile = nomeFile.substring(0,notFilename);
+                    owned = false;
+                }
+                Documento d = TuringServer.usersHandler.getDoc(currentUser,nomeFile,owned);
                 RispostaTCP resp = null;
                 if(d.getEditingUser(richiesta.getNumsezioni()).equals(richiesta.getUsername())){
                     List<String> lst = d.removeEdit(richiesta.getNumsezioni());
@@ -213,7 +234,7 @@ public class WriteTask implements Runnable{
                         Utility.sendResponse(daServire,new RispostaTCP(esito),richiesta);
                     }
                     if(lst != null){
-                        String ntf = "Il documento: "+richiesta.getNomefile()+" sezione: "
+                        String ntf = "Il documento: "+nomeFile+" sezione: "
                                 +richiesta.getNumsezioni()+" è ora disponibile per la modifica.";
                         // Notifica a chi voleva editare il file solo se ancora online
                         for(String usr : lst)
@@ -223,7 +244,7 @@ public class WriteTask implements Runnable{
                     }
                     // Stampa lato server
                     System.out.println("L'utente: "+richiesta.getUsername()+" ha terminato edit documento: "+
-                            richiesta.getNomefile());
+                            nomeFile);
                     // Metodo per il riuso degli indirizzi multicast non più assegnati
                     TuringServer.reuseMulticastAddress(d);
                 }else{
