@@ -85,7 +85,7 @@ class Login extends Frame {
         // Listener Ok Button
         ok.addActionListener(e->{
             if((!username.getText().isEmpty() && !password.getText().isEmpty())) {
-                RispostaTCP response = Turing.login(username.getText(), password.getText());
+                RispostaTCP response = Turing.login(username.getText().toLowerCase(), password.getText());
                 if (response == null) {
                     JOptionPane.showMessageDialog(this, "Errore in apertura comunicazione con server.",
                             "Turing - Error",JOptionPane.ERROR_MESSAGE,
@@ -94,7 +94,7 @@ class Login extends Frame {
                 }
                 int val = response.getEsito();
                 if (val == 0) {
-                    Turing.currentUsername = username.getText();
+                    Turing.currentUsername = username.getText().toLowerCase();
                     try {
                         Files.createDirectories(Paths.get(username.getText() + "_Docs/").toAbsolutePath());
                     } catch (IOException ioe) {

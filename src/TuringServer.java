@@ -107,6 +107,7 @@ public class TuringServer {
             finally {
                 try {
                     scritturaHT.close();
+                    serverSocket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

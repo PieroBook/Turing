@@ -181,14 +181,14 @@ public class Turing extends Frame {
                         "Turing - Info",JOptionPane.INFORMATION_MESSAGE,
                         new ImageIcon("drawable/fault.png"));
             }else{
-                if(username.getText().compareTo(currentUsername)==0){
+                if(username.getText().toLowerCase().compareTo(currentUsername)==0){
                     JOptionPane.showMessageDialog(this, "Nome utente non valido.",
                             "Turing - Info",JOptionPane.INFORMATION_MESSAGE,
                             new ImageIcon("drawable/fault.png"));
                 }else{
                     mutex.lock();
                     RispostaTCP response = requestAndReply(
-                            new RichiestaTCP(5,currentUsername,file_choice.getSelectedItem(),username.getText()));
+                            new RichiestaTCP(5,currentUsername,file_choice.getSelectedItem(),username.getText().toLowerCase()));
                     mutex.unlock();
                     if(response != null){
                         if(response.getEsito() == 0) {

@@ -108,7 +108,7 @@ class Registrazione extends Frame {
                 // Invio e conferma registrazione se ok
                 Boolean esito = null;
                 try {
-                    esito = Turing.usr.registraUtente(nome.getText(),cognome.getText(),nomeutente.getText(),password.getText());
+                    esito = Turing.usr.registraUtente(nome.getText(),cognome.getText(),nomeutente.getText().toLowerCase(),password.getText());
                 } catch (RemoteException | NullPointerException e1) {
                     JOptionPane.showMessageDialog(this,"Errore in comunicazione con server.",
                             "Turing - Error",JOptionPane.ERROR_MESSAGE,
@@ -117,7 +117,7 @@ class Registrazione extends Frame {
                 if(esito != null && esito){
                     // Registrazione riuscita
                     JOptionPane.showMessageDialog(this,"Registrazione completata con successo.",
-                            "Turing - Error",JOptionPane.INFORMATION_MESSAGE,
+                            "Turing - Success",JOptionPane.INFORMATION_MESSAGE,
                             new ImageIcon("drawable/cloud.png"));
                     padre.setVisible(Boolean.TRUE);
                     this.dispose();

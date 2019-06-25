@@ -1,7 +1,9 @@
 ## Posizionarsi nella directory
 ## cd Turing
-## Rimuove eventuali compilazioni precedenti
+## Rimuove eventuali compilazioni ed esecuzioni client precedenti
 rm *.class
+rm -r out
+rm -r *_Docs
 ## Compilazione
 javac -cp lib/gson-2.8.5.jar:lib/commons-codec-1.12.jar: src/*
 mv src/*.class .
