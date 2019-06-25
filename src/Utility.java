@@ -102,6 +102,7 @@ class Utility {
         FileChannel tmp_documento ;
         ByteBuffer len;
         Path filePath = Paths.get(getFilePath(doc,sezione)).toAbsolutePath();
+        long temp,filelen;
         try{
             if(sezione == 0){
                 try{
@@ -114,25 +115,32 @@ class Utility {
                 for(int i=1; i<=doc.getNumsezioni(); i++){
                     String path = getFilePath(doc,i);
                     FileChannel documento = FileChannel.open(Paths.get(path).toAbsolutePath(), StandardOpenOption.READ);
-                    documento.transferTo(0,documento.size(),tmp_documento);
+                    temp = 0;
+                    while ((temp += documento.transferTo(temp,documento.size(),tmp_documento))!= documento.size());
                     String s = "\n---- Fine Sezione "+i+" ----";
                     if(i != doc.getNumsezioni())
                         s = s+"\n";
-                    tmp_documento.write((ByteBuffer)ByteBuffer.allocate(s.getBytes().length).put(s.getBytes()).flip());
+                    temp = 0;
+                    while((temp += tmp_documento.write(
+                            (ByteBuffer)ByteBuffer.allocate(s.getBytes().length).put(s.getBytes()).flip()))!= s.getBytes().length);
                     documento.close();
                 }
                 tmp_documento.close();
             }
             tmp_documento = FileChannel.open(filePath, StandardOpenOption.READ);
-            len = (ByteBuffer) ByteBuffer.allocate(8).putLong(tmp_documento.size()).flip();
+            filelen = tmp_documento.size();
+            len = (ByteBuffer) ByteBuffer.allocate(8).putLong(filelen).flip();
         }catch(Exception e) {
             // Gracefull Termination
             len = (ByteBuffer) ByteBuffer.allocate(8).putLong(0).flip();
-            daServire.write(len);
+            temp = 0;
+            while ( (temp += daServire.write(len)) != 8);
             return;
         }
-        daServire.write(len);
-        tmp_documento.transferTo(0,tmp_documento.size(),daServire);
+        temp = 0;
+        while( (temp += daServire.write(len)) != 8);
+        temp = 0;
+        while ((temp += tmp_documento.transferTo(temp,filelen,daServire))!= filelen);
         tmp_documento.close();
         if(sezione == 0)
             Files.delete(filePath);
@@ -157,7 +165,7 @@ class Utility {
         ByteBuffer len = ByteBuffer.allocate(8);
         // Legge la dimensione attesa
         try {
-            while(daServire.read(len) <= 0);
+            while(daServire.read(len) != 8);
         } catch (IOException e) {
             System.err.println("Errore ricezione file : "+filePath.toString());
             e.printStackTrace();
@@ -166,9 +174,9 @@ class Utility {
         }
         // Dimensione attesa
         long incomingSize = ((ByteBuffer)len.flip()).getLong();
-        int tmp = 0;
+        long tmp = 0;
         // Avvia trasferimento documento via filechannel
-        while ((tmp += incoming.transferFrom(daServire,0,incomingSize))!= incomingSize);
+        while ((tmp += incoming.transferFrom(daServire,tmp,incomingSize))!= incomingSize);
         incoming.close();
         mutex.unlock();
         return 0;

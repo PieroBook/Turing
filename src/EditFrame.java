@@ -164,6 +164,7 @@ class EditFrame extends Frame {
             Turing.mutex.lock();
             FileChannel tmp_documento;
             ByteBuffer len;
+            long temp;
             try {
                 // Invia richiesta di end-edit con modifica
                 Turing.requestAndReply(
@@ -173,10 +174,11 @@ class EditFrame extends Frame {
                 // Lunghezza della sezione
                 len = (ByteBuffer) ByteBuffer.allocate(8).putLong(tmp_documento.size()).flip();
                 // Invio size nuova sez doc
-                Turing.clientSocket.write(len);
+                temp = 0;
+                while((temp += Turing.clientSocket.write(len))<8);
                 // Invio nuova sez doc
-                long tmp = tmp_documento.size();
-                while ((tmp -= tmp_documento.transferTo(0, tmp_documento.size(),Turing.clientSocket)) != 0 );
+                temp = 0;
+                while ((temp += tmp_documento.transferTo(temp, tmp_documento.size(),Turing.clientSocket))!=tmp_documento.size());
                 tmp_documento.close();
                 // Riceve info sull' esito della ricezione
                 value = Turing.getReply(true).getEsito();

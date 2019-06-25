@@ -474,14 +474,14 @@ public class Turing extends Frame {
                 StandardOpenOption.TRUNCATE_EXISTING);
         ByteBuffer len = ByteBuffer.allocate(8);
         // Legge la dimensione attesa
-        int letto = 0;
+        long letto = 0;
         do{
             letto += clientSocket.read(len);
         }while(letto < 8);
         long incomingSize = ((ByteBuffer)len.flip()).getLong();
         letto = 0;
         // Avvia trasferimento documento via filechannel
-        while ((letto += incoming.transferFrom(clientSocket,0,incomingSize))!= incomingSize);
+        while ((letto += incoming.transferFrom(clientSocket,letto,incomingSize))!= incomingSize);
         incoming.close();
         return filepath.toString();
     }
