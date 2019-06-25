@@ -1,9 +1,12 @@
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import org.apache.commons.codec.digest.DigestUtils;
+
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ItemEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -30,6 +33,7 @@ public class Turing extends Frame {
     private RispostaTCP lista;
     // Thread notifiche
     private static Thread updater;
+    static boolean updateNeeded;
     // GraphicUserInterface stuffs
     private Label utentecorrente;
     private String nullField = "------------------";
@@ -191,9 +195,7 @@ public class Turing extends Frame {
                             JOptionPane.showMessageDialog(this, "Utente aggiunto correttamente.",
                                     "Turing - Info",JOptionPane.INFORMATION_MESSAGE,
                                     new ImageIcon("drawable/info.png"));
-                            mutex.lock();
-                            aggiornaInfoClient();
-                            mutex.unlock();
+                            //aggiornaInfoClient();
                         }else if(response.getEsito() == -1)
                             JOptionPane.showMessageDialog(this, "Nome utente non esistente.",
                                     "Turing - Info",JOptionPane.INFORMATION_MESSAGE,
@@ -261,7 +263,6 @@ public class Turing extends Frame {
                     JOptionPane.showMessageDialog(this, "Errore nel recupero del file!",
                             "Turing - Error",JOptionPane.ERROR_MESSAGE,
                             new ImageIcon("drawable/error.png"));
-                    mutex.unlock();
                     return;
                 }
                 JOptionPane.showMessageDialog(this, "File recuperato correttamente!",
@@ -286,7 +287,6 @@ public class Turing extends Frame {
                 JOptionPane.showMessageDialog(this, "Problema di comunicazione con server.",
                         "Turing - Error",JOptionPane.ERROR_MESSAGE,
                         new ImageIcon("drawable/error.png"));
-                mutex.unlock();
             }else{
                 if(response.getEsito() == 0){
                     String path;
@@ -303,7 +303,6 @@ public class Turing extends Frame {
                         mutex.unlock();
                         return;
                     }
-                    mutex.unlock();
                     try (InputStream is = Files.newInputStream(Paths.get(path))) {
                         md5 = DigestUtils.md5Hex(is);
                     }catch (IOException ignored){}
@@ -313,31 +312,18 @@ public class Turing extends Frame {
                     JOptionPane.showMessageDialog(this, response.getNotifiche().get(0),
                             "Turing - Info",JOptionPane.INFORMATION_MESSAGE,
                             new ImageIcon("drawable/docInfo.png"));
-                    mutex.unlock();
                 }
             }
+            mutex.unlock();
         });
 
         // Listener window
         addWindowListener(new WindowAdapter(){
             public void windowOpened(WindowEvent e) {
                 (updater = new Thread(() -> {
-                    mutex.lock();
-                    aggiornaInfoClient();
-                    mutex.unlock();
+                    updateNeeded = true;
                     while(!Thread.interrupted()){
-                        mutex.lock();
-                        try{
-                            clientSocket.configureBlocking(false);
-                            boolean ris = listenNotifica();
-                            clientSocket.configureBlocking(true);
-                            if(ris)
-                                aggiornaInfoClient();
-                        }catch (IOException ioe) {
-                            mutex.unlock();
-                            return;
-                        }
-                        mutex.unlock();
+                        aggiornaInfoClient();
                         try {
                             Thread.sleep(1750);
                         } catch (InterruptedException ignored) {}
@@ -349,18 +335,6 @@ public class Turing extends Frame {
             }
             public void windowClosed(WindowEvent e) {
                 System.exit(0);
-            }
-        });
-
-        // Listener Component
-        addComponentListener(new ComponentListener() {
-            public void componentResized(ComponentEvent e){}
-            public void componentMoved(ComponentEvent e){}
-            public void componentHidden(ComponentEvent e){}
-            public void componentShown(ComponentEvent e) {
-                mutex.lock();
-                aggiornaInfoClient();
-                mutex.unlock();
             }
         });
     }
@@ -398,6 +372,7 @@ public class Turing extends Frame {
         try {
             Turing.clientSocket = SocketChannel.open();
             Turing.clientSocket.connect(new InetSocketAddress(InetAddress.getLocalHost(),11223));
+            clientSocket.configureBlocking(false);
         } catch (Exception e1) {
             try {
                 Turing.clientSocket.close();
@@ -430,42 +405,50 @@ public class Turing extends Frame {
         }
         buffer.clear();
         // Leggo la risposta
-        RispostaTCP response = getReply();
-        try {
-            // Gestisco caso di login fallito e logout
-            if ((richiesta.getCodop() == 1 && response.getEsito() != 0) || richiesta.getCodop() == 8 ) {
-                clientSocket.close();
-                currentUsername = null;
+        RispostaTCP response = getReply(true);
+        if(response != null) {
+            try {
+                // Gestisco caso di login fallito e logout
+                if ((richiesta.getCodop() == 1 && response.getEsito() != 0) || richiesta.getCodop() == 8) {
+                    clientSocket.close();
+                    currentUsername = null;
+                }
+            } catch (IOException ignored) {
+                System.err.println("Errore logout:: Chiuso");
             }
-        } catch (IOException ignored) {
-            System.err.println("Errore logout:: Chiuso");
         }
         return response;
     }
 
-    static RispostaTCP getReply(){
-        RispostaTCP response;
+    static RispostaTCP getReply(boolean waitUntilResponse){
+        RispostaTCP response = new RispostaTCP(-1);
         ByteBuffer dim = ByteBuffer.allocate(4);
         int letto = 0;
         try {
-            while(letto < 4){
+            do{
                 letto += clientSocket.read(dim);
-            }
-        } catch (IOException ignored) {
-            return new RispostaTCP(-1);
+            }while(letto < 4 && waitUntilResponse);
+        } catch (Exception e) {
+            return response;
         }
+        if(letto == -1)
+            return response;
+        if(letto == 0)
+            return null;
         int val = ((ByteBuffer)dim.flip()).getInt();
         // Alloco Buffer da dim byte
         ByteBuffer buffer = ByteBuffer.allocate(val);
+        int letto2 = 0;
         // Leggo risposta
         try {
-            letto = clientSocket.read(buffer);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return new RispostaTCP(-1);
+            do{
+                letto2 += clientSocket.read(buffer);
+            }while(letto2 < letto);
+        } catch (Exception e) {
+            return response;
         }
         if (letto <= 0){
-            return new RispostaTCP(-1);
+            return response;
         }
         // Riconverto il json
         String jsonString = new String(((ByteBuffer)buffer.flip()).array()).trim();
@@ -473,7 +456,7 @@ public class Turing extends Frame {
         try{
             response = (new Gson()).fromJson(reader, RispostaTCP.class);
         }catch (com.google.gson.JsonSyntaxException ex){
-            return new RispostaTCP(-1);
+            return response;
         }
         return response;
     }
@@ -491,69 +474,67 @@ public class Turing extends Frame {
                 StandardOpenOption.TRUNCATE_EXISTING);
         ByteBuffer len = ByteBuffer.allocate(8);
         // Legge la dimensione attesa
-        clientSocket.read(len);
-        long incominSize = ((ByteBuffer)len.flip()).getLong();
+        int letto = 0;
+        do{
+            letto += clientSocket.read(len);
+        }while(letto < 8);
+        long incomingSize = ((ByteBuffer)len.flip()).getLong();
+        letto = 0;
         // Avvia trasferimento documento via filechannel
-        incoming.transferFrom(clientSocket,0,incominSize);
+        while ((letto += incoming.transferFrom(clientSocket,0,incomingSize))!= incomingSize);
         incoming.close();
         return filepath.toString();
     }
 
     private void aggiornaInfoClient(){
-        // Numero max tentativi
-        int retry = 5;
-        boolean updated = false;
-        // Finchè non esaurisce tentativi e non è aggiornato
-        while(retry != 0 && !updated){
-            // Invia richiesta lista info
-            lista = requestAndReply(new RichiestaTCP(7,currentUsername));
-            // Se richiesta a buon fine aggiorno tutte le info da visualizzare
-            if(lista!=null){
-                int file = file_choice.getSelectedIndex();
-                int section = section_choice.getSelectedIndex();
-                file_choice.removeAll();
-                section_choice.removeAll();
-                file_choice.add(nullField);
+        mutex.lock();
+        // Invia richiesta lista info
+        RispostaTCP nlista;
+        if(updateNeeded)
+            nlista = requestAndReply(new RichiestaTCP(7,currentUsername));
+        else
+            nlista = getReply(false);
+        mutex.unlock();
+        // Se richiesta a buon fine aggiorno tutte le info da visualizzare
+        if(nlista!=null){
+            // Server non raggiungibile
+            if(nlista.getEsito() == -1)
+                crashExit();
+            lista = nlista;
+            int file = file_choice.getSelectedIndex();
+            int section = section_choice.getSelectedIndex();
+            file_choice.removeAll();
+            section_choice.removeAll();
+            file_choice.add(nullField);
 
-                if(lista.getFiles()!= null && !lista.getFiles().isEmpty()){
-                    for(Documento n : lista.getFiles()){
-                        if(n.getOwner().compareTo(currentUsername)!=0)
-                            file_choice.add(n.getNomefile()+" - ("+n.getOwner()+")");
-                        else
-                            file_choice.add(n.getNomefile());
-                    }
+            if(lista.getFiles()!= null && !lista.getFiles().isEmpty()){
+                for(Documento n : lista.getFiles()){
+                    if(n.getOwner().compareTo(currentUsername)!=0)
+                        file_choice.add(n.getNomefile()+" - ("+n.getOwner()+")");
+                    else
+                        file_choice.add(n.getNomefile());
                 }
-                if(file>0) {
-                    file_choice.select(file);
-                    file_choice.getItemListeners()[0].itemStateChanged(
-                            new ItemEvent(file_choice, ItemEvent.ITEM_STATE_CHANGED, file_choice, ItemEvent.SELECTED));
-                    section_choice.select(section);
-                    section_choice.getItemListeners()[0].itemStateChanged(
-                            new ItemEvent(section_choice, ItemEvent.ITEM_STATE_CHANGED, section_choice, ItemEvent.SELECTED));
-                }
-                // Mostro notifiche pendenti
-                if(lista.getNotifiche()!=null && !lista.getNotifiche().isEmpty() &&
-                        lista.getNotifiche().get(0) != null){
-                    StringBuilder strb = new StringBuilder();
-                    for(String s : lista.getNotifiche()){
-                        strb.append(s).append("\n");
-                    }
-                    JOptionPane.showMessageDialog(this,strb.toString(),
-                            "Turing - Notifiche",JOptionPane.INFORMATION_MESSAGE,
-                            new ImageIcon("drawable/docinfo.png"));
-                }
-                updated = true;
-            }else{
-                try{
-                    Thread.sleep(400);
-                }catch (Exception ignored){}
-                retry--;
             }
-        }
-        if(!updated){
-            // Se falliscono tutti i tentativi di contattare server
-            System.err.println("CrashUpdateInfo:: Il server non è raggiungibile.");
-            crashExit();
+            if(file!= -1 && section != -1) {
+                file_choice.select(file);
+                file_choice.getItemListeners()[0].itemStateChanged(
+                        new ItemEvent(file_choice, ItemEvent.ITEM_STATE_CHANGED, file_choice, ItemEvent.SELECTED));
+                section_choice.select(section);
+                section_choice.getItemListeners()[0].itemStateChanged(
+                        new ItemEvent(section_choice, ItemEvent.ITEM_STATE_CHANGED, section_choice, ItemEvent.SELECTED));
+            }
+            // Mostro notifiche pendenti
+            if(lista.getNotifiche()!=null && !lista.getNotifiche().isEmpty() &&
+                    lista.getNotifiche().get(0) != null){
+                StringBuilder strb = new StringBuilder();
+                for(String s : lista.getNotifiche()){
+                    strb.append(s).append("\n");
+                }
+                JOptionPane.showMessageDialog(this,strb.toString(),
+                        "Turing - Notifiche",JOptionPane.INFORMATION_MESSAGE,
+                        new ImageIcon("drawable/docinfo.png"));
+            }
+            updateNeeded = false;
         }
         // Dopo login imposto il nome utente in basso a dx nel Frame Turing
         if(utentecorrente == null){
@@ -563,28 +544,6 @@ public class Turing extends Frame {
             utentecorrente.setFont(new Font("",Font.PLAIN,10));
             add(utentecorrente);
         }
-    }
-
-    private boolean listenNotifica(){
-        // Leggo la risposta
-        ByteBuffer buffer = ByteBuffer.allocate(4);
-        int tmp,letto=0;
-        try {
-            do{
-                tmp = clientSocket.read(buffer);
-                letto += tmp;
-            }while(tmp>0);
-        }catch (IOException ioe){
-            return false;
-        }
-        if(tmp == -1){
-            crashExit();
-        }
-        if(letto == 4 ){
-            // 22 Cod_OP per nuova notifica
-            return ((ByteBuffer)buffer.flip()).getInt() == 22;
-        }
-        return false;
     }
 
     private void crashExit(){

@@ -54,6 +54,7 @@ class NuovoFile extends Frame {
             }
             public void windowClosed(WindowEvent e) {
                 // Apro finistra Turing
+                Turing.updateNeeded = true;
                 padre.setVisible(Boolean.TRUE);
             }
         });
@@ -63,7 +64,6 @@ class NuovoFile extends Frame {
         // Listener btn annulla
         undo.addActionListener(e -> {
             // Chiudi finistra
-            this.padre.setVisible(Boolean.TRUE);
             this.dispose();
         });
 
@@ -99,7 +99,6 @@ class NuovoFile extends Frame {
                             JOptionPane.showMessageDialog(this, "Creazione file avvenuta con successo.",
                                     "Turing - Error",JOptionPane.INFORMATION_MESSAGE,
                                     new ImageIcon("drawable/save.png"));
-                            this.padre.setVisible(Boolean.TRUE);
                             this.dispose();
                         } else if (response.getEsito() == -1) {
                             JOptionPane.showMessageDialog(this, "File già presente sul Server",
@@ -114,7 +113,6 @@ class NuovoFile extends Frame {
                         JOptionPane.showMessageDialog(this, "Problema comunicazione Server",
                                 "Turing - Error",JOptionPane.ERROR_MESSAGE,
                                 new ImageIcon("drawable/error.png"));
-
                     }
                 }
             }

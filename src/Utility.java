@@ -71,24 +71,19 @@ class Utility {
         // Aggiunge norifica per l'utente
         TuringServer.usersHandler.getRegisteredUser(user).addNotifica(msg);
 
-        // Invio notifica se utente online
-        if(send!=null) {
-            // Alloca ByteBuffer per contenere codice notifica
-            ByteBuffer info = (ByteBuffer) ByteBuffer.allocate(4).putInt(22).flip();
+        // Invio lista e notifica se utente online
+        if(send!=null){
             // Lock per socket se la notifica e' per un altro utente, altrimenti ho gia il lock sul sock
             ReentrantLock mutex_destinatario = null;
-            if (send != daServire) {
+            if (send != daServire){
+                // Recupera lock destinatario notifica
                 mutex_destinatario = TuringServer.lockChannel.get(send);
-                // E' online la mutex esiste, provo ad acquisire la lock
+                // Acquisice la lock
                 mutex_destinatario.lock();
             }
-            // Scrive nel channel
-            try {
-                while (info.hasRemaining())
-                    send.write(info);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            Utility.sendResponse(send, new RispostaTCP(0, TuringServer.usersHandler.getUserDocuments(user),
+                            TuringServer.usersHandler.getRegisteredUser(user).getNotificationList()),
+                            new RichiestaTCP(7,null));
             // libero la lock se l'ho acquisita
             if (mutex_destinatario != null)
                 mutex_destinatario.unlock();

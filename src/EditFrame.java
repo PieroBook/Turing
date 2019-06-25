@@ -179,7 +179,7 @@ class EditFrame extends Frame {
                 while ((tmp -= tmp_documento.transferTo(0, tmp_documento.size(),Turing.clientSocket)) != 0 );
                 tmp_documento.close();
                 // Riceve info sull' esito della ricezione
-                value = Turing.getReply().getEsito();
+                value = Turing.getReply(true).getEsito();
             }catch(IOException ioe){
                 ioe.printStackTrace();
                 System.err.println("Problema nella ritrasmissione info");
