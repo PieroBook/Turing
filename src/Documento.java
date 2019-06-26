@@ -32,8 +32,10 @@ class Documento {
 
     // Metodo aggiunta condivisori del file (Proprietario incluso)
     boolean addShare(String s){
+        // Controlla se gia condiviso con l'utente s
         if( sharedWith.indexOf(s) != -1)
             return false;
+        // Aggiunge condivisore
         sharedWith.add(s);
         return true;
     }
@@ -49,7 +51,9 @@ class Documento {
     }
 
     // Aggiunge utente alla lista di edit o di wait
+    // Ritorna null o l'username di chi sta editando
     String addEdit(String user, int sezione){
+        // Riallineamento indice
         sezione--;
         String usr = editBy.get(sezione);
         if(usr == null){

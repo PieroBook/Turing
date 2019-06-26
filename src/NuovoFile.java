@@ -53,7 +53,7 @@ class NuovoFile extends Frame {
                 e.getWindow().dispose();
             }
             public void windowClosed(WindowEvent e) {
-                // Apro finistra Turing
+                // Apro finistra Turing e richiedo update info
                 Turing.updateNeeded = true;
                 padre.setVisible(Boolean.TRUE);
             }

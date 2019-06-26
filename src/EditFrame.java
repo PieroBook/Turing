@@ -81,6 +81,7 @@ class EditFrame extends Frame {
         add(end_edit);
         add(undo);
 
+        // Listener ber i bottoni
         end_edit.addActionListener(e-> {
             // Verifica modifiche effettive e procede all'invio della nuova versione
             int res = sendModification();

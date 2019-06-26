@@ -19,6 +19,7 @@ public class MulticastChat implements Runnable {
 
     @Override
     public void run() {
+        // Task ricezione messaggi in chat
         try(MulticastSocket socket = new MulticastSocket(3000)){
             int LENGTH = 512;
             DatagramPacket packet = new DatagramPacket(new byte[LENGTH], LENGTH);
@@ -36,6 +37,7 @@ public class MulticastChat implements Runnable {
         }
     }
 
+    // Metodo per l'invio di un messaggio ad un gruppo multicast
     void sendMessage(String msg){
         try{
             DatagramPacket packet = new DatagramPacket(

@@ -92,6 +92,7 @@ class Login extends Frame {
                             new ImageIcon("drawable/error.png"));
                     return;
                 }
+                // Richiesta andata a buon fine
                 int val = response.getEsito();
                 if (val == 0) {
                     Turing.currentUsername = username.getText().toLowerCase();

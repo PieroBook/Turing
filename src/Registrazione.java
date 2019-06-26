@@ -109,7 +109,8 @@ class Registrazione extends Frame {
                 // Invio e conferma registrazione se ok
                 Boolean esito = null;
                 try {
-                    esito = Turing.usr.registraUtente(nome.getText(),cognome.getText(),nomeutente.getText().toLowerCase(),password.getText());
+                    esito = Turing.usr.registraUtente(nome.getText(),cognome.getText(),
+                            nomeutente.getText().toLowerCase(),password.getText());
                 } catch (RemoteException | NullPointerException e1) {
                     JOptionPane.showMessageDialog(this,"Errore in comunicazione con server.",
                             "Turing - Error",JOptionPane.ERROR_MESSAGE,
