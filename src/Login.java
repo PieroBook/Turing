@@ -97,7 +97,7 @@ class Login extends Frame {
                 if (val == 0) {
                     Turing.currentUsername = username.getText().toLowerCase();
                     try {
-                        Files.createDirectories(Paths.get(username.getText() + "_Docs/").toAbsolutePath());
+                        Files.createDirectories(Paths.get(username.getText().toLowerCase() + "_Docs/").toAbsolutePath());
                     } catch (IOException ioe) {
                         ioe.printStackTrace();
                     }
