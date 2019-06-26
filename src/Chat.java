@@ -1,5 +1,4 @@
 import java.awt.*;
-import java.awt.event.*;
 
 class Chat extends Panel {
     private ScrollPane vista;

@@ -30,9 +30,8 @@ public class Turing extends Frame {
     // Nome utente logged-in
     static String currentUsername;
     // List informazioni
-    private RispostaTCP lista;
-    // Thread notifiche
-    private static Thread updater;
+    private RispostaTCP shownInfo;
+    // Variabile richiesta update
     static boolean updateNeeded;
     // GraphicUserInterface stuffs
     private Label utentecorrente;
@@ -63,6 +62,7 @@ public class Turing extends Frame {
         section_choice = new Choice();
         // Creo bottoni
         Button newfile = new Button("Nuovo File");
+        Button refresh = new Button("Refresh Info");
         Button logout = new Button("Logout");
         add = new Button("Aggiungi");
         list = new Button("Lista");
@@ -82,8 +82,9 @@ public class Turing extends Frame {
         username.setBounds(290,100,170,20);
         file_choice.setBounds(25,60,200,30);
         section_choice.setBounds(25,130,200,30);
-        newfile.setBounds(100,260,100,20);
-        logout.setBounds(300,260,100,20);
+        newfile.setBounds(50,260,100,20);
+        refresh.setBounds(200,260,100,20);
+        logout.setBounds(350,260,100,20);
         add.setBounds(275,160,90,20);
         list.setBounds(385,160,90,20);
         mod.setBounds(25,190,90,20);
@@ -98,6 +99,7 @@ public class Turing extends Frame {
         add(file_choice);
         add(section_choice);
         add(newfile);
+        add(refresh);
         add(logout);
         add(add);
         add(list);
@@ -118,7 +120,7 @@ public class Turing extends Frame {
             section_choice.removeAll();
             listaCondivisi.removeAll();
             // Nessun file disponibile, opzioni inibite
-            if (file.compareTo(nullField) == 0 || lista == null){
+            if (file.compareTo(nullField) == 0 || shownInfo == null){
                 section_choice.setEnabled(false);
                 add.setEnabled(false);
                 list.setEnabled(false);
@@ -128,7 +130,7 @@ public class Turing extends Frame {
             } else{
                 section_choice.setEnabled(true);
                 int idx = file_choice.getSelectedIndex()-1;
-                Documento d = lista.getFiles().get(idx);
+                Documento d = shownInfo.getFiles().get(idx);
                 if(d.getNumsezioni() != 1){
                     section_choice.add("Tutte le sezioni");
                     mod.setEnabled(false);
@@ -195,7 +197,7 @@ public class Turing extends Frame {
                             JOptionPane.showMessageDialog(this, "Utente aggiunto correttamente.",
                                     "Turing - Info",JOptionPane.INFORMATION_MESSAGE,
                                     new ImageIcon("drawable/info.png"));
-                            //aggiornaInfoClient();
+                            updateNeeded = true;
                         }else if(response.getEsito() == -1)
                             JOptionPane.showMessageDialog(this, "Nome utente non esistente.",
                                     "Turing - Info",JOptionPane.INFORMATION_MESSAGE,
@@ -322,18 +324,25 @@ public class Turing extends Frame {
             mutex.unlock();
         });
 
+        // Listener refresh
+        refresh.addActionListener(e->{
+            updateNeeded = true;
+        });
+
         // Listener window
         addWindowListener(new WindowAdapter(){
             public void windowOpened(WindowEvent e) {
-                (updater = new Thread(() -> {
+                Thread updater = new Thread(() -> {
                     updateNeeded = true;
                     while(!Thread.interrupted()){
                         aggiornaInfoClient();
                         try {
-                            Thread.sleep(1750);
+                            Thread.sleep(1500);
                         } catch (InterruptedException ignored) {}
                     }
-                })).start();
+                });
+                updater.setDaemon(true);
+                updater.start();
             }
             public void windowClosing(WindowEvent e){
                 e.getWindow().dispose();
@@ -342,6 +351,66 @@ public class Turing extends Frame {
                 System.exit(0);
             }
         });
+    }
+
+    private void aggiornaInfoClient(){
+        mutex.lock();
+        // Invia richiesta lista info
+        RispostaTCP nlista;
+        if(updateNeeded)
+            nlista = requestAndReply(new RichiestaTCP(7,currentUsername));
+        else
+            nlista = getReply(false);
+        mutex.unlock();
+        // Se richiesta a buon fine aggiorno tutte le info da visualizzare
+        if(nlista!=null){
+            // Server non raggiungibile
+            if(nlista.getEsito() == -1)
+                crashExit();
+            shownInfo = nlista;
+            int file = file_choice.getSelectedIndex();
+            int section = section_choice.getSelectedIndex();
+            file_choice.removeAll();
+            section_choice.removeAll();
+            file_choice.add(nullField);
+
+            if(shownInfo.getFiles()!= null && !shownInfo.getFiles().isEmpty()){
+                for(Documento n : shownInfo.getFiles()){
+                    if(n.getOwner().compareTo(currentUsername)!=0)
+                        file_choice.add(n.getNomefile()+" - ("+n.getOwner()+")");
+                    else
+                        file_choice.add(n.getNomefile());
+                }
+            }
+            if(file!= -1 && section != -1) {
+                file_choice.select(file);
+                file_choice.getItemListeners()[0].itemStateChanged(
+                        new ItemEvent(file_choice, ItemEvent.ITEM_STATE_CHANGED, file_choice, ItemEvent.SELECTED));
+                section_choice.select(section);
+                section_choice.getItemListeners()[0].itemStateChanged(
+                        new ItemEvent(section_choice, ItemEvent.ITEM_STATE_CHANGED, section_choice, ItemEvent.SELECTED));
+            }
+            // Mostro notifiche pendenti
+            if(shownInfo.getNotifiche()!=null && !shownInfo.getNotifiche().isEmpty() &&
+                    shownInfo.getNotifiche().get(0) != null){
+                StringBuilder strb = new StringBuilder();
+                for(String s : shownInfo.getNotifiche()){
+                    strb.append(s).append("\n");
+                }
+                JOptionPane.showMessageDialog(this,strb.toString(),
+                        "Turing - Notifiche",JOptionPane.INFORMATION_MESSAGE,
+                        new ImageIcon("drawable/docinfo.png"));
+            }
+            updateNeeded = false;
+        }
+        // Dopo login imposto il nome utente in basso a dx nel Frame Turing
+        if(utentecorrente == null){
+            utentecorrente = new Label(currentUsername);
+            utentecorrente.setBounds(400,220,100,20);
+            utentecorrente.setAlignment(Label.CENTER);
+            utentecorrente.setFont(new Font("",Font.PLAIN,10));
+            add(utentecorrente);
+        }
     }
 
     @Override
@@ -360,7 +429,8 @@ public class Turing extends Frame {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             // Chiusura socket, logout e interruzione updater
             if(currentUsername != null){
-                updater.interrupt();
+                // Il daemon termina autonomamente
+                // updater.interrupt();
                 System.err.println("Procedo alla chiusura del client");
                 try{
                     clientSocket.close();
@@ -492,66 +562,6 @@ public class Turing extends Frame {
         while ((letto += incoming.transferFrom(clientSocket,letto,incomingSize))!= incomingSize);
         incoming.close();
         return filepath.toString();
-    }
-
-    private void aggiornaInfoClient(){
-        mutex.lock();
-        // Invia richiesta lista info
-        RispostaTCP nlista;
-        if(updateNeeded)
-            nlista = requestAndReply(new RichiestaTCP(7,currentUsername));
-        else
-            nlista = getReply(false);
-        mutex.unlock();
-        // Se richiesta a buon fine aggiorno tutte le info da visualizzare
-        if(nlista!=null){
-            // Server non raggiungibile
-            if(nlista.getEsito() == -1)
-                crashExit();
-            lista = nlista;
-            int file = file_choice.getSelectedIndex();
-            int section = section_choice.getSelectedIndex();
-            file_choice.removeAll();
-            section_choice.removeAll();
-            file_choice.add(nullField);
-
-            if(lista.getFiles()!= null && !lista.getFiles().isEmpty()){
-                for(Documento n : lista.getFiles()){
-                    if(n.getOwner().compareTo(currentUsername)!=0)
-                        file_choice.add(n.getNomefile()+" - ("+n.getOwner()+")");
-                    else
-                        file_choice.add(n.getNomefile());
-                }
-            }
-            if(file!= -1 && section != -1) {
-                file_choice.select(file);
-                file_choice.getItemListeners()[0].itemStateChanged(
-                        new ItemEvent(file_choice, ItemEvent.ITEM_STATE_CHANGED, file_choice, ItemEvent.SELECTED));
-                section_choice.select(section);
-                section_choice.getItemListeners()[0].itemStateChanged(
-                        new ItemEvent(section_choice, ItemEvent.ITEM_STATE_CHANGED, section_choice, ItemEvent.SELECTED));
-            }
-            // Mostro notifiche pendenti
-            if(lista.getNotifiche()!=null && !lista.getNotifiche().isEmpty() &&
-                    lista.getNotifiche().get(0) != null){
-                StringBuilder strb = new StringBuilder();
-                for(String s : lista.getNotifiche()){
-                    strb.append(s).append("\n");
-                }
-                JOptionPane.showMessageDialog(this,strb.toString(),
-                        "Turing - Notifiche",JOptionPane.INFORMATION_MESSAGE,
-                        new ImageIcon("drawable/docinfo.png"));
-            }
-            updateNeeded = false;
-        }
-        // Dopo login imposto il nome utente in basso a dx nel Frame Turing
-        if(utentecorrente == null){
-            utentecorrente = new Label(currentUsername);
-            utentecorrente.setBounds(400,220,100,20);
-            utentecorrente.setAlignment(Label.CENTER);
-            utentecorrente.setFont(new Font("",Font.PLAIN,10));
-            add(utentecorrente);
-        }
     }
 
     private void crashExit(){

@@ -14,12 +14,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 class EditFrame extends Frame {
+    Chat chatArea;
     private String sendBackFile;
     private String nomeDocumento;
     private String currentPath;
     private String hashFile;
-    Chat chatArea;
-    private MulticastChat mc;
     private int sezione;
 
     EditFrame(Frame c, String nomeDocumento, int sezione, String hashfile, String addressGroup){
@@ -34,7 +33,13 @@ class EditFrame extends Frame {
         this.nomeDocumento = nomeDocumento;
         this.sezione = sezione;
         this.hashFile = hashfile;
-        this.mc = new MulticastChat(this,addressGroup);
+
+        // Istanzia chat Thread
+        MulticastChat chat = new MulticastChat(this,addressGroup);
+        Thread chatThread = new Thread(chat);
+        chatThread.setDaemon(true);
+        chatThread.start();
+
         // Oggetti grafici
         Label namefile = new Label("Nome File");
         Label section = new Label("Numero Sezione");
@@ -76,12 +81,6 @@ class EditFrame extends Frame {
         add(end_edit);
         add(undo);
 
-        Thread chatHandler = new Thread( ()->{
-            mc.run();
-            while (!Thread.interrupted());
-        });
-        chatHandler.start();
-
         end_edit.addActionListener(e-> {
             // Verifica modifiche effettive e procede all'invio della nuova versione
             int res = sendModification();
@@ -98,14 +97,12 @@ class EditFrame extends Frame {
                 new ImageIcon("drawable/cloud.png"));
             }
             c.setVisible(Boolean.TRUE);
-            chatHandler.interrupt();
             this.dispose();
         });
 
         undo.addActionListener(e->{
             undoModification();
             c.setVisible(Boolean.TRUE);
-            chatHandler.interrupt();
             this.dispose();
         });
 
@@ -129,7 +126,7 @@ class EditFrame extends Frame {
         inviaChat.addActionListener(e -> {
             String testo = corpoChat.getText().trim();
             if(testo.length() != 0){
-                mc.sendMessage(Turing.currentUsername+": "+testo+"\n");
+                chat.sendMessage(Turing.currentUsername+": "+testo+"\n");
                 corpoChat.setText("");
             }
         });
@@ -151,10 +148,12 @@ class EditFrame extends Frame {
         if(sendBackFile != null){
             String newhash = "";
             Path filePath = Paths.get(currentPath+"/"+sendBackFile).toAbsolutePath();
+
             //Calcola CheckSum della sezione in questione
             try (InputStream is = Files.newInputStream(Paths.get(filePath.toString()))) {
                 newhash = DigestUtils.md5Hex(is);
             }catch (IOException ignored){}
+
             // Se la sezione ha lo stesso hash non reinvia indietro il file.
             if(this.hashFile.equals(newhash)){
                 // END_EDIT senza modifica

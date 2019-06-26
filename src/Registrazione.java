@@ -7,7 +7,7 @@ import java.rmi.RemoteException;
 
 class Registrazione extends Frame {
     // Thread RMI
-    private static Thread rmiInstauration;
+    private Thread rmiInstauration;
     private Frame padre;
     private Button conferma,annulla;
     private TextField nome,cognome,nomeutente,password;
@@ -75,7 +75,6 @@ class Registrazione extends Frame {
             }
             public void windowClosed(WindowEvent e) {
                 // Apro finistra Registrazione
-                //Chiusura Thread RMI
                 rmiInstauration.interrupt();
                 l.setVisible(Boolean.TRUE);
             }
@@ -84,11 +83,13 @@ class Registrazione extends Frame {
         // Avvio instaurazione RMI
         // Avvio RMI per registrazione
         System.out.println("Avvio recupero RMI");
-        (rmiInstauration = new Thread(new RmiClientInstauration())).start();
+        rmiInstauration = new Thread(new RmiClientInstauration());
+        rmiInstauration.setDaemon(true);
+        rmiInstauration.start();
+        System.out.println("Connessione RMI Stabilita");
         try {
             rmiInstauration.join();
-        } catch (InterruptedException ignored){}
-        System.out.println("Connessione RMI Stabilita");
+        } catch (InterruptedException ignored) {}
     }
 
     private void setupEventsListeners(){

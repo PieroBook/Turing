@@ -25,7 +25,7 @@ class Utility {
         return letto;
     }
 
-    // Deletermina il filePath di una sezione di un documento
+    // Determina il filePath di una sezione di un documento
     private static String getFilePath(Documento d,int num){
         String path;
         String[] split;
@@ -96,6 +96,17 @@ class Utility {
             toCancel.cancel();
             daServire.close();
         }catch(IOException ignored) { }
+    }
+
+    static Documento recuperaDocumento(RichiestaTCP richiesta, Utente user){
+        int notFilename;
+        boolean owned = true;
+        String nomeFile = richiesta.getNomefile();
+        if((notFilename = nomeFile.indexOf(" - (")) != -1){
+            nomeFile = nomeFile.substring(0,notFilename);
+            owned = false;
+        }
+        return TuringServer.usersHandler.getDoc(user,nomeFile,owned);
     }
 
     static void inviaDocumento(SocketChannel daServire, Documento doc, int sezione) throws IOException{
