@@ -57,38 +57,29 @@ public class WriteTask implements Runnable{
                 Utente owner = TuringServer.usersHandler.getRegisteredUser(d.getOwner());
                 RispostaTCP resp = null;
                 if( owner != null){
-                    if (d != null){
-                        // Prova a richiedere modifica della sezione
-                        String useredit = d.addEdit(richiesta.getUsername(),richiesta.getNumsezioni());
-                        // Nessuno sta gia modificando la sezione
-                        if(useredit == null){
-                            // Modifica possibile, invio esito positivo e file
-                            List<String> lst = new ArrayList<>();
-                            lst.add(TuringServer.getMulticastAddress(d));
-                            Utility.sendResponse(daServire, new RispostaTCP(0,null,lst),richiesta);
-                            try {
-                                Utility.inviaDocumento(daServire,d,richiesta.getNumsezioni());
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            //Stampa lato server
-                            System.out.println("Utente: "+richiesta.getUsername()+" ha richiesto modifica file: "+
-                                    richiesta.getNomefile());
-                        }else{
-                            List<String> info = new ArrayList<>();
-                            String str = "Utente "+useredit+" sta editando la sezione del documento richiesta.";
-                            // Stampa lato server
-                            System.out.println("Utente "+useredit+" ha richiesto una sezione già in edit");
-                            info.add(str);
-                            resp = new RispostaTCP(-1,null,info);
+                    // Prova a richiedere modifica della sezione
+                    String useredit = d.addEdit(richiesta.getUsername(),richiesta.getNumsezioni());
+                    // Nessuno sta gia modificando la sezione
+                    if(useredit == null){
+                        // Modifica possibile, invio esito positivo e file
+                        List<String> lst = new ArrayList<>();
+                        lst.add(TuringServer.getMulticastAddress(d));
+                        Utility.sendResponse(daServire, new RispostaTCP(0,null,lst),richiesta);
+                        try {
+                            Utility.inviaDocumento(daServire,d,richiesta.getNumsezioni());
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
+                        //Stampa lato server
+                        System.out.println("Utente: "+richiesta.getUsername()+" ha richiesto modifica file: "+
+                                richiesta.getNomefile());
                     }else{
-                        String str = "Il documento richiesto non esiste";
-                        // Stampa lato server
-                        System.out.println("Utente "+richiesta.getUsername()+" "+str);
                         List<String> info = new ArrayList<>();
+                        String str = "Utente "+useredit+" sta editando la sezione del documento richiesta.";
+                        // Stampa lato server
+                        System.out.println("Utente "+useredit+" ha richiesto una sezione già in edit");
                         info.add(str);
-                        resp = new RispostaTCP(-2,null,info);
+                        resp = new RispostaTCP(-1,null,info);
                     }
                 }else{
                     // Stampa lato server

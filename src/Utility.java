@@ -116,24 +116,31 @@ class Utility {
         long temp,filelen;
         try{
             if(sezione == 0){
+                doc.lockAllSection.lock();
                 try{
                     tmp_documento = FileChannel.open(filePath,
                             StandardOpenOption.CREATE,StandardOpenOption.APPEND,StandardOpenOption.WRITE);
                 }catch(Exception e){
                     e.printStackTrace();
+                    doc.lockAllSection.unlock();
                     return;
                 }
                 for(int i=1; i<=doc.getNumsezioni(); i++){
                     String path = getFilePath(doc,i);
                     FileChannel documento = FileChannel.open(Paths.get(path).toAbsolutePath(), StandardOpenOption.READ);
                     temp = 0;
-                    while ((temp += documento.transferTo(temp,documento.size(),tmp_documento))!= documento.size());
+                    do{
+                        temp += documento.transferTo(temp,documento.size(),tmp_documento);
+                    }while (temp != documento.size());
                     String s = "\n---- Fine Sezione "+i+" ----";
                     if(i != doc.getNumsezioni())
                         s = s+"\n";
                     temp = 0;
-                    while((temp += tmp_documento.write(
-                            (ByteBuffer)ByteBuffer.allocate(s.getBytes().length).put(s.getBytes()).flip()))!= s.getBytes().length);
+                    ByteBuffer lunghezza = ByteBuffer.allocate(s.getBytes().length);
+                    lunghezza.put(s.getBytes()).flip();
+                    do{
+                        temp += tmp_documento.write(lunghezza);
+                    }while(temp != s.getBytes().length);
                     documento.close();
                 }
                 tmp_documento.close();
@@ -145,16 +152,26 @@ class Utility {
             // Gracefull Termination
             len = (ByteBuffer) ByteBuffer.allocate(8).putLong(0).flip();
             temp = 0;
-            while ( (temp += daServire.write(len)) != 8);
+            do{
+                temp += daServire.write(len);
+            }while ( temp != 8);
+            if(sezione == 0)
+                doc.lockAllSection.unlock();
             return;
         }
         temp = 0;
-        while( (temp += daServire.write(len)) != 8);
+        do{
+            temp += daServire.write(len);
+        }while( temp != 8);
         temp = 0;
-        while ((temp += tmp_documento.transferTo(temp,filelen,daServire))!= filelen);
+        do{
+            temp += tmp_documento.transferTo(temp,filelen,daServire);
+        }while ( temp != filelen);
         tmp_documento.close();
-        if(sezione == 0)
+        if(sezione == 0) {
             Files.delete(filePath);
+            doc.lockAllSection.unlock();
+        }
     }
 
     static int riceviDocumento(SocketChannel daServire, Documento doc, int sez) throws IOException{
@@ -176,7 +193,10 @@ class Utility {
         ByteBuffer len = ByteBuffer.allocate(8);
         // Legge la dimensione attesa
         try {
-            while(daServire.read(len) != 8);
+            int temp;
+            do{
+                temp = daServire.read(len);
+            }while(temp != 8);
         } catch (IOException e) {
             System.err.println("Errore ricezione file : "+filePath.toString());
             e.printStackTrace();
@@ -187,7 +207,9 @@ class Utility {
         long incomingSize = ((ByteBuffer)len.flip()).getLong();
         long tmp = 0;
         // Avvia trasferimento documento via filechannel
-        while ((tmp += incoming.transferFrom(daServire,tmp,incomingSize))!= incomingSize);
+        do{
+            tmp += incoming.transferFrom(daServire,tmp,incomingSize);
+        }while ( tmp != incomingSize);
         incoming.close();
         mutex.unlock();
         return 0;

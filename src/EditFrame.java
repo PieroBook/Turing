@@ -175,13 +175,19 @@ class EditFrame extends Frame {
                 len = (ByteBuffer) ByteBuffer.allocate(8).putLong(tmp_documento.size()).flip();
                 // Invio size nuova sez doc
                 temp = 0;
-                while((temp += Turing.clientSocket.write(len))<8);
+                do{
+                    temp += Turing.clientSocket.write(len);
+                }while(temp<8);
                 // Invio nuova sez doc
                 temp = 0;
-                while ((temp += tmp_documento.transferTo(temp, tmp_documento.size(),Turing.clientSocket))!=tmp_documento.size());
+                do{
+                    temp += tmp_documento.transferTo(temp, tmp_documento.size(),Turing.clientSocket);
+                }while (temp!=tmp_documento.size());
                 tmp_documento.close();
                 // Riceve info sull' esito della ricezione
-                value = Turing.getReply(true).getEsito();
+                RispostaTCP risp = Turing.getReply(true);
+                if (risp != null)
+                    value = risp.getEsito();
             }catch(IOException ioe){
                 ioe.printStackTrace();
                 System.err.println("Problema nella ritrasmissione info");

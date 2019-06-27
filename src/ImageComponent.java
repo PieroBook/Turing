@@ -10,7 +10,7 @@ public class ImageComponent extends Component implements SwingConstants, Accessi
     private String[] msg;
     private int numRighe = 1;
     private int reallen = 300;
-    boolean own;
+    private boolean own;
 
     // Componente grafico per la rappresentazione del messaggio in chat
     ImageComponent(boolean owned,String text){

@@ -28,7 +28,7 @@ public class MulticastChat implements Runnable {
             while(!Thread.interrupted()){
                 socket.receive(packet);
                 String str = new String(packet.getData(),packet.getOffset(),packet.getLength(), StandardCharsets.UTF_8);
-                String[] vett = str.split("\\:");
+                String[] vett = str.split("[:]");
                 frameEdit.chatArea.addMsg(
                         vett[0].equals(Turing.currentUsername), str);
             }

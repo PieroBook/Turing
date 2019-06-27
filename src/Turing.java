@@ -240,7 +240,6 @@ public class Turing extends Frame {
 
         // Listener btn visSezione
         vis.addActionListener(e->{
-            boolean owned = true;
             String file = this.file_choice.getSelectedItem();
             int numsez = 0;
             if(section_choice.getSelectedItem().compareTo("Tutte le sezioni")!=0){
@@ -255,14 +254,15 @@ public class Turing extends Frame {
                         new ImageIcon("drawable/error.png"));
             }else{
                 int notFilename;
+                String ownerName = null;
                 if((notFilename = file.indexOf(" - (")) != -1){
+                    ownerName = file.substring(notFilename+4,file.length()-1);
                     file = file.substring(0,notFilename);
-                    owned = false;
                 }
                 try{
                     if(section_choice.getItemCount() == 1)
                         numsez = 0;
-                    riceviSezioneFile(file,numsez,owned);
+                    riceviSezioneFile(file,numsez,ownerName);
                 }catch (IOException ignored){
                     JOptionPane.showMessageDialog(this, "Errore nel recupero del file!",
                             "Turing - Error",JOptionPane.ERROR_MESSAGE,
@@ -278,7 +278,6 @@ public class Turing extends Frame {
 
         // Listener btn modSezione
         mod.addActionListener(e->{
-            boolean owned = true;
             String file = this.file_choice.getSelectedItem();
             String dirtyFileName = this.file_choice.getSelectedItem();
             int numsez = Integer.parseInt(section_choice.getSelectedItem());
@@ -291,9 +290,10 @@ public class Turing extends Frame {
                         new ImageIcon("drawable/error.png"));
             }else{
                 int notFilename;
+                String ownerName = null;
                 if((notFilename = file.indexOf(" - (")) != -1){
+                    ownerName = file.substring(notFilename+4,file.length()-1);
                     file = file.substring(0,notFilename);
-                    owned = false;
                 }
                 if(response.getEsito() == 0){
                     String path;
@@ -302,7 +302,7 @@ public class Turing extends Frame {
                     if(section_choice.getItemCount() == 1)
                         val = 0;
                     try{
-                        path = riceviSezioneFile(file,val,owned);
+                        path = riceviSezioneFile(file,val,ownerName);
                     }catch (IOException ignored){
                         JOptionPane.showMessageDialog(this, "Errore nel recupero del file!",
                                 "Turing - Error",JOptionPane.ERROR_MESSAGE,
@@ -325,9 +325,7 @@ public class Turing extends Frame {
         });
 
         // Listener refresh
-        refresh.addActionListener(e->{
-            updateNeeded = true;
-        });
+        refresh.addActionListener(e-> updateNeeded = true);
 
         // Listener window
         addWindowListener(new WindowAdapter(){
@@ -536,16 +534,16 @@ public class Turing extends Frame {
         return response;
     }
 
-    private String riceviSezioneFile(String name, int sez, boolean owned) throws IOException{
+    private String riceviSezioneFile(String name, int sez, String owner) throws IOException{
         // Divide nome del documento in nomefile ed estensione
         String[] split = name.split("\\.");
         // Aggiunge identificativo proprio file
-        String intermedia = "_Docs/";
-        if(owned) intermedia = intermedia+currentUsername+"_";
+        String userDir = currentUsername+"_Docs/";
+        if(owner != null) userDir = userDir+owner+"_";
         // Aggiunge alla stringa il path utente
-        String path = currentUsername+intermedia+split[0]+"_"+sez+"."+split[1];
+        String path = userDir+split[0]+"_"+sez+"."+split[1];
         if (sez == 0)
-            path = currentUsername+intermedia+name;
+            path = userDir+name;
         Path filepath = Paths.get(path).toAbsolutePath();
         // Crea FileChannel in ricezione
         FileChannel incoming = FileChannel.open(filepath, StandardOpenOption.CREATE, StandardOpenOption.WRITE,
@@ -559,7 +557,9 @@ public class Turing extends Frame {
         long incomingSize = ((ByteBuffer)len.flip()).getLong();
         letto = 0;
         // Avvia trasferimento documento via filechannel
-        while ((letto += incoming.transferFrom(clientSocket,letto,incomingSize))!= incomingSize);
+        do {
+            letto += incoming.transferFrom(clientSocket,letto,incomingSize);
+        }while (letto != incomingSize);
         incoming.close();
         return filepath.toString();
     }

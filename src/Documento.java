@@ -1,12 +1,14 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
+import java.util.concurrent.locks.ReentrantLock;
 
 class Documento {
     private String nomefile;
     private String owner;
     private int numsezioni;
     private List<String> sharedWith;
+    transient ReentrantLock lockAllSection;
     transient private List<String> editBy;
     transient private List<List<String>> wantToEdit;
 
@@ -90,6 +92,7 @@ class Documento {
             editBy.add(i,null);
             wantToEdit.add(i,new ArrayList<>());
         }
+        lockAllSection = new ReentrantLock();
     }
 
     // Ritorna una stringa di notifica che informa su chi sta editando e cosa e' in edit
