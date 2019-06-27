@@ -114,7 +114,7 @@ class EditFrame extends Frame {
                 int returnVal = chooser.showOpenDialog(e.getComponent());
                 if(returnVal == JFileChooser.APPROVE_OPTION) {
                     sendBackFile = chooser.getSelectedFile().getName();
-                    filescelto.setText("<html><u>"+sendBackFile+"</u></html>");
+                    filescelto.setText(sendBackFile);
                     end_edit.setEnabled(Boolean.TRUE);
                 }
             }
