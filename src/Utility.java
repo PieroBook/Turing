@@ -117,31 +117,34 @@ class Utility {
         try{
             if(sezione == 0){
                 doc.lockAllSection.lock();
-                try{
+                try {
                     tmp_documento = FileChannel.open(filePath,
-                            StandardOpenOption.CREATE,StandardOpenOption.APPEND,StandardOpenOption.WRITE);
-                }catch(Exception e){
+                            StandardOpenOption.CREATE, StandardOpenOption.APPEND, StandardOpenOption.WRITE);
+                } catch (Exception e) {
                     e.printStackTrace();
+                    Files.delete(filePath);
                     doc.lockAllSection.unlock();
                     return;
                 }
-                for(int i=1; i<=doc.getNumsezioni(); i++){
-                    String path = getFilePath(doc,i);
-                    FileChannel documento = FileChannel.open(Paths.get(path).toAbsolutePath(), StandardOpenOption.READ);
-                    temp = 0;
-                    do{
-                        temp += documento.transferTo(temp,documento.size(),tmp_documento);
-                    }while (temp != documento.size());
-                    String s = "\n---- Fine Sezione "+i+" ----";
-                    if(i != doc.getNumsezioni())
-                        s = s+"\n";
-                    temp = 0;
-                    ByteBuffer lunghezza = ByteBuffer.allocate(s.getBytes().length);
-                    lunghezza.put(s.getBytes()).flip();
-                    do{
-                        temp += tmp_documento.write(lunghezza);
-                    }while(temp != s.getBytes().length);
-                    documento.close();
+                if(tmp_documento.size() == 0){
+                    for (int i = 1; i <= doc.getNumsezioni(); i++) {
+                        String path = getFilePath(doc, i);
+                        FileChannel documento = FileChannel.open(Paths.get(path).toAbsolutePath(), StandardOpenOption.READ);
+                        temp = 0;
+                        do {
+                            temp += documento.transferTo(temp, documento.size(), tmp_documento);
+                        } while (temp != documento.size());
+                        String s = "\n---- Fine Sezione " + i + " ----";
+                        if (i != doc.getNumsezioni())
+                            s = s + "\n";
+                        temp = 0;
+                        ByteBuffer lunghezza = ByteBuffer.allocate(s.getBytes().length);
+                        lunghezza.put(s.getBytes()).flip();
+                        do {
+                            temp += tmp_documento.write(lunghezza);
+                        } while (temp != s.getBytes().length);
+                        documento.close();
+                    }
                 }
                 tmp_documento.close();
             }
@@ -155,8 +158,10 @@ class Utility {
             do{
                 temp += daServire.write(len);
             }while ( temp != 8);
-            if(sezione == 0)
+            if(sezione == 0) {
+                Files.delete(filePath);
                 doc.lockAllSection.unlock();
+            }
             return;
         }
         temp = 0;
@@ -169,7 +174,8 @@ class Utility {
         }while ( temp != filelen);
         tmp_documento.close();
         if(sezione == 0) {
-            Files.delete(filePath);
+            if(doc.lockAllSection.getQueueLength() == 0)
+                Files.delete(filePath);
             doc.lockAllSection.unlock();
         }
     }
