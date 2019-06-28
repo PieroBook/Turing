@@ -140,7 +140,7 @@ public class TuringServer {
             stackOne.addLast(i);
         }
         // Svolge funzione di Listener
-        while(true){
+        while(!Thread.interrupted()){
             SocketChannel daServire;
             serverSelector.select();
             Iterator it = serverSelector.selectedKeys().iterator();
@@ -168,11 +168,6 @@ public class TuringServer {
                         sockReq.remove(daServire);
                     }
                 }
-            }
-            try {
-                Thread.sleep(250);
-            } catch (InterruptedException e) {
-                System.exit(0);
             }
             // Solo un Signal puo' interrompere l'esecuzione
         }

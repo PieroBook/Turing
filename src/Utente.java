@@ -1,3 +1,5 @@
+import org.apache.commons.codec.digest.DigestUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -14,7 +16,7 @@ class Utente {
         this.nome = n;
         this.cognome = c;
         this.username = u;
-        this.password = pwd;
+        this.password = DigestUtils.md5Hex(pwd);
         this.notifiche = Collections.synchronizedList(new ArrayList<>());
     }
 
@@ -25,7 +27,7 @@ class Utente {
 
     // Metodo di controllo psw al login
     boolean checkPassword(String pwd){
-        return this.password.equals(pwd);
+        return this.password.equals(DigestUtils.md5Hex(pwd));
     }
 
     // Ritorna lista di notifiche da recapitare e cancella quest'ultime
