@@ -27,5 +27,6 @@ public class RmiClientInstauration implements Runnable {
                 } catch (InterruptedException ignored) {}
             }
         }
+        System.out.println("Connessione RMI Stabilita");
     }
 }

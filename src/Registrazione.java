@@ -86,10 +86,6 @@ class Registrazione extends Frame {
         rmiInstauration = new Thread(new RmiClientInstauration());
         rmiInstauration.setDaemon(true);
         rmiInstauration.start();
-        System.out.println("Connessione RMI Stabilita");
-        try {
-            rmiInstauration.join();
-        } catch (InterruptedException ignored) {}
     }
 
     private void setupEventsListeners(){
@@ -121,7 +117,6 @@ class Registrazione extends Frame {
                     JOptionPane.showMessageDialog(this,"Registrazione completata con successo.",
                             "Turing - Success",JOptionPane.INFORMATION_MESSAGE,
                             new ImageIcon("drawable/cloud.png"));
-                    padre.setVisible(Boolean.TRUE);
                     this.dispose();
                 }else if(esito!=null){
                     //Se username gia presente
@@ -135,7 +130,6 @@ class Registrazione extends Frame {
         // Event Listener btn UNDO
         annulla.addActionListener(e -> {
             // Chiudi finistra
-            padre.setVisible(Boolean.TRUE);
             this.dispose();
         });
     }
