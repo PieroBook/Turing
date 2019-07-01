@@ -461,7 +461,9 @@ public class Turing extends Frame {
             clientSocket.socket().setSoTimeout(1800);
             clientSocket.connect(new InetSocketAddress(InetAddress.getByName(ServerIP),11223));
             clientSocket.configureBlocking(false);
-            while(! clientSocket.finishConnect() );
+            while(! clientSocket.finishConnect() ){
+                //Attesa attiva
+            }
         } catch (Exception e1) {
             try {
                 clientSocket.close();

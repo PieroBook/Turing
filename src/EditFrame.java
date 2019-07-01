@@ -35,12 +35,6 @@ class EditFrame extends Frame {
         this.sezione = sezione;
         this.hashFile = hashfile;
 
-        // Istanzia chat Thread
-        MulticastChat chat = new MulticastChat(this,addressGroup);
-        Thread chatThread = new Thread(chat);
-        chatThread.setDaemon(true);
-        chatThread.start();
-
         // Oggetti grafici
         Label namefile = new Label("Nome File");
         Label section = new Label("Numero Sezione");
@@ -81,6 +75,12 @@ class EditFrame extends Frame {
         end_edit.setEnabled(Boolean.FALSE);
         add(end_edit);
         add(undo);
+
+        // Istanzia chat Thread
+        MulticastChat chat = new MulticastChat(this,addressGroup);
+        Thread chatThread = new Thread(chat);
+        chatThread.setDaemon(true);
+        chatThread.start();
 
         // Listener ber i bottoni
         end_edit.addActionListener(e-> {
