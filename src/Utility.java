@@ -236,7 +236,7 @@ class Utility {
             e.printStackTrace();
         }
         if(richiesta.getCodop() == 1 ){
-            // Associo a SocketChannel il relativo username oppure chiudo connessione
+            // Se esito positivo associo a SocketChannel il relativo username altrimenti chiudo connessione
             if (risposta.getEsito() == 0)
                 TuringServer.online.put(richiesta.getUsername(),daServire);
             else

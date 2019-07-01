@@ -33,6 +33,8 @@ public class Turing extends Frame {
     private RispostaTCP shownInfo;
     // Variabile richiesta update
     static boolean updateNeeded;
+    // Thread daemon updater
+    private Thread updater;
     // GraphicUserInterface stuffs
     private Label utentecorrente;
     private String nullField = "------------------";
@@ -174,7 +176,16 @@ public class Turing extends Frame {
         });
 
         // Listener btn logout
-        logout.addActionListener(e->this.dispose());
+        logout.addActionListener(e->{
+            updater.interrupt();
+            RispostaTCP risp = requestAndReply(new RichiestaTCP(8,currentUsername));
+            if( risp!= null && risp.getEsito() == 0)
+                JOptionPane.showMessageDialog(this, "Logout eseguito correttamente.",
+                        "Turing - Info",JOptionPane.INFORMATION_MESSAGE,
+                        new ImageIcon("drawable/info.png"));
+            currentUsername = null;
+            this.dispose();
+        });
 
         // Listener btn addCondivisore
         add.addActionListener(e->{
@@ -330,13 +341,15 @@ public class Turing extends Frame {
         // Listener window
         addWindowListener(new WindowAdapter(){
             public void windowOpened(WindowEvent e) {
-                Thread updater = new Thread(() -> {
+                updater = new Thread(() -> {
                     updateNeeded = true;
                     while(!Thread.interrupted()){
                         aggiornaInfoClient();
                         try {
                             Thread.sleep(1500);
-                        } catch (InterruptedException ignored) {}
+                        } catch (InterruptedException ignored) {
+                            return;
+                        }
                     }
                 });
                 updater.setDaemon(true);
@@ -443,12 +456,13 @@ public class Turing extends Frame {
     static RispostaTCP login(String user, String passw){
         // Creo SocketChannel
         try {
-            Turing.clientSocket = SocketChannel.open();
-            Turing.clientSocket.connect(new InetSocketAddress(InetAddress.getLocalHost(),11223));
+            clientSocket = SocketChannel.open();
+            clientSocket.connect(new InetSocketAddress(InetAddress.getLocalHost(),11223));
             clientSocket.configureBlocking(false);
+            while(! clientSocket.finishConnect() );
         } catch (Exception e1) {
             try {
-                Turing.clientSocket.close();
+                clientSocket.close();
             } catch (IOException ignored) {
                 System.err.println("Socket Non aperto e non chiuso");
                 return null;
@@ -458,6 +472,7 @@ public class Turing extends Frame {
         mutex.lock();
         RispostaTCP responso = requestAndReply(login);
         mutex.unlock();
+        System.out.println("Client Local Addr: "+clientSocket.socket());
         return responso;
     }
 

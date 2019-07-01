@@ -3,6 +3,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
@@ -112,16 +113,16 @@ public class TuringServer {
                     e.printStackTrace();
                 }
             }
+            System.err.println("Chiusura Server:: Attendo fine ThreadPoolExecutor");
             // Termino ThreadPoolExecutor
             executor.shutdown();
-            System.err.println("Chiusura Server:: Attendo fine ThreadPoolExecutor");
-            //while(!executor.isTerminated());
             System.err.println("Chiusura Server:: Terminato.");
         }));
 
         // LISTENER :: Mi preparo a gestire richieste TCP
-        serverSocket.socket().bind(new InetSocketAddress(11223));
-        serverSocket.configureBlocking(Boolean.FALSE);
+        String localIP = InetAddress.getLocalHost().getHostAddress();
+        serverSocket.socket().bind(new InetSocketAddress(InetAddress.getByName(localIP),11223));
+        serverSocket.configureBlocking(false);
         // Registro la serverSocket sul selector solo in accept
         serverSelector = Selector.open();
         serverSocket.register(serverSelector, SelectionKey.OP_ACCEPT);
@@ -139,6 +140,7 @@ public class TuringServer {
         for(int i=1; i<255;i++){
             stackOne.addLast(i);
         }
+        System.out.println("Server Local Addr: "+serverSocket.socket());
         // Svolge funzione di Listener
         while(!Thread.interrupted()){
             SocketChannel daServire;
