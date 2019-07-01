@@ -32,8 +32,10 @@ public class MulticastChat implements Runnable {
                 frameEdit.chatArea.addMsg(
                         vett[0].equals(Turing.currentUsername), str);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+	    frameEdit.chatArea.setEnabled(false);
+	    frameEdit.inviaChat.setEnabled(false);
+            System.err.println("Nessuna interfaccia di rete attiva. Solo localhost");
         }
     }
 

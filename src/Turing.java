@@ -457,7 +457,8 @@ public class Turing extends Frame {
         // Creo SocketChannel
         try {
             clientSocket = SocketChannel.open();
-            clientSocket.connect(new InetSocketAddress(InetAddress.getLocalHost(),11223));
+            clientSocket.socket().setSoTimeout(1800);
+            clientSocket.connect(new InetSocketAddress(11223));
             clientSocket.configureBlocking(false);
             while(! clientSocket.finishConnect() );
         } catch (Exception e1) {

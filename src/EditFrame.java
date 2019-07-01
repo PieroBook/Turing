@@ -15,6 +15,7 @@ import java.nio.file.StandardOpenOption;
 
 class EditFrame extends Frame {
     Chat chatArea;
+    Button inviaChat;
     private String sendBackFile;
     private String nomeDocumento;
     private String currentPath;
@@ -48,7 +49,7 @@ class EditFrame extends Frame {
         labelChat.setBounds(490,25,70,20);
         add(labelChat);
         TextArea corpoChat = new TextArea("",3,30,TextArea.SCROLLBARS_VERTICAL_ONLY);
-        Button inviaChat = new Button("Invia");
+        inviaChat = new Button("Invia");
         namefile.setBounds(20,40,120,20);
         section.setBounds(20,70,120,20);
         percorso.setBounds(20,100,120,20);

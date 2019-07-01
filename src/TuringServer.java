@@ -120,8 +120,7 @@ public class TuringServer {
         }));
 
         // LISTENER :: Mi preparo a gestire richieste TCP
-        String localIP = InetAddress.getLocalHost().getHostAddress();
-        serverSocket.socket().bind(new InetSocketAddress(InetAddress.getByName(localIP),11223));
+        serverSocket.socket().bind(new InetSocketAddress(11223));
         serverSocket.configureBlocking(false);
         // Registro la serverSocket sul selector solo in accept
         serverSelector = Selector.open();

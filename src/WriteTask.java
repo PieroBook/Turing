@@ -184,7 +184,8 @@ public class WriteTask implements Runnable{
                 Utility.sendResponse(daServire, new RispostaTCP(0),richiesta);
                 Utility.logout(daServire, richiesta.getUsername());
                 Utility.closeChannel(daServire);
-                break;
+	            mutex.unlock();
+                return;
             }
             case 9 : // END-EDIT e Update Sezione
             case 10 :{ // END-EDIT
@@ -235,7 +236,7 @@ public class WriteTask implements Runnable{
             }
         }
         try{
-            daServire.register(TuringServer.serverSelector,SelectionKey.OP_READ);
+             daServire.register(TuringServer.serverSelector,SelectionKey.OP_READ);
         }catch (ClosedChannelException ignored){}
         mutex.unlock();
     }

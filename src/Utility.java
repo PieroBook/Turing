@@ -16,7 +16,7 @@ class Utility {
     // Legge dal socket e inserisce nel buffer. Ritorna il numero di byte letti o exception
     static int readJson(SocketChannel daServire , ByteBuffer buffer) throws IOException {
         int letto = 0;
-        while(true){
+        while(buffer.hasRemaining()){
             int tmp = daServire.read(buffer);
             if(tmp <= 0)
                 break;

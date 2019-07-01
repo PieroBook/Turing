@@ -3,6 +3,7 @@ import com.google.gson.stream.JsonReader;
 
 import java.io.StringReader;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -20,19 +21,20 @@ public class ReadTask implements Runnable{
         mutex.lock();
         // Operazioni per il recupero dell'operazione richiesta.
         ByteBuffer jsonletto = ByteBuffer.allocate(4);
-        int sizeJson;
+        int sizeJson = 0;
         try{
-            sizeJson = Utility.readJson(daServire, jsonletto);
-            if(sizeJson > 0){
-                jsonletto = ByteBuffer.allocate( ((ByteBuffer)jsonletto.flip()).getInt() );
+            while (jsonletto.hasRemaining()){
                 sizeJson = Utility.readJson(daServire, jsonletto);
+                if(sizeJson == 4){
+                    jsonletto = ByteBuffer.allocate( ((ByteBuffer)jsonletto.flip()).getInt() );
+                    sizeJson = Utility.readJson(daServire, jsonletto);
+                } else if(sizeJson == -1) {
+                    handleExit();
+                    return;
+                }
             }
         }catch (Exception e){
             System.err.println("Fallimento Lettura richiesta da socket");
-            handleExit();
-            return;
-        }
-        if(sizeJson <= 0){
             handleExit();
             return;
         }
