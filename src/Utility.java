@@ -292,10 +292,38 @@ class Utility {
                         // Richiede cancellazione lista attesa
                         d.clearAttesa(i);
                     }
-                    TuringServer.reuseMulticastAddress(d);
+                    reuseMulticastAddress(d);
                 }
             }
         }
+    }
 
+    static String getMulticastAddress(Documento d){
+        String addr = TuringServer.docAddress.get(d);
+        if(addr == null){
+            addr = "239.1.1.";
+            if(TuringServer.stackOne.isEmpty()){
+                System.err.println("Non sono disponibili indirizzi di multicast.");
+                return null;
+            }else{
+                addr = addr+TuringServer.stackOne.pollFirst();
+            }
+        }
+        TuringServer.docAddress.put(d,addr);
+        System.err.println("Assegnato a documento: "+d.getNomefile()+" indirizzo multicast: "+addr);
+        return addr;
+    }
+
+    static void reuseMulticastAddress(Documento d){
+        for(int i=1;i<d.getNumsezioni();i++){
+            if(d.getEditingUser(i) != null)
+                return;
+        }
+        String addr = TuringServer.docAddress.remove(d);
+        if(addr == null)
+            return;
+        String[] vett = addr.split("\\.");
+        TuringServer.stackOne.push(Integer.parseInt(vett[3]));
+        System.err.println("Rimosso a documento: "+d.getNomefile()+" indirizzo multicast: "+addr);
     }
 }

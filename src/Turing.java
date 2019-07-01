@@ -1,7 +1,6 @@
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import org.apache.commons.codec.digest.DigestUtils;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ItemEvent;
@@ -22,6 +21,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Turing extends Frame {
+    // IP Server and RMI
+    static final String ServerIP = "127.0.0.1";
     // Socket di comunicazione
     static SocketChannel clientSocket;
     static ReentrantLock mutex;
@@ -458,7 +459,7 @@ public class Turing extends Frame {
         try {
             clientSocket = SocketChannel.open();
             clientSocket.socket().setSoTimeout(1800);
-            clientSocket.connect(new InetSocketAddress(11223));
+            clientSocket.connect(new InetSocketAddress(InetAddress.getByName(ServerIP),11223));
             clientSocket.configureBlocking(false);
             while(! clientSocket.finishConnect() );
         } catch (Exception e1) {

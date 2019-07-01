@@ -22,6 +22,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class TuringServer {
+    // IP Server and RMI
+    private static final String ServerIP = "127.0.0.1";
     // Istanze condivise
     // Struttura Dati gestione utenti con metodo di registrazione esposto via RMI
     static UsersDocsHandler usersHandler;
@@ -34,9 +36,9 @@ public class TuringServer {
     // Mappa socket - richiesta
     static Map<SocketChannel, RichiestaTCP> sockReq;
     // Mappa documento - multicastAddr
-    private static Map<Documento, String> docAddress;
+    static Map<Documento, String> docAddress;
     // Indirizzi Multicast
-    private static ConcurrentLinkedDeque<Integer> stackOne;
+    static ConcurrentLinkedDeque<Integer> stackOne;
 
     public static void main(String[] args) throws IOException{
         // Recupero evantuali HashMap salvate precedentemente
@@ -64,8 +66,6 @@ public class TuringServer {
             usersHandler = (new Gson()).fromJson(reader, UsersDocsHandler.class);
             usersHandler.initTransient();
         }
-        // ServerSocket
-        ServerSocketChannel serverSocket = ServerSocketChannel.open();
         // Espongo Gestione registrazione via RMI
         try{
             InterfaceUser stub = (InterfaceUser) UnicastRemoteObject.exportObject(usersHandler, Registry.REGISTRY_PORT);
@@ -77,50 +77,9 @@ public class TuringServer {
         }
         // Instanzio ThreadPoolExecutor
         ThreadPoolExecutor executor=(ThreadPoolExecutor) Executors.newCachedThreadPool();
-        // Handler Terminazione server
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            usersHandler.setLogout();
-            System.err.println("Chiusura Server:: Conservo HashMap.");
-            // Conservo HT Utenti
-            FileChannel scritturaHT;
-            try {
-                scritturaHT = FileChannel.open(Paths.get("DATA/HashMap.json").toAbsolutePath(),
-                        StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING,StandardOpenOption.WRITE);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
-            // Crea un stringa json dell'oggetto e lo converte in un array di byte
-            byte [] input = (new GsonBuilder().create()).toJson(usersHandler).getBytes();
-            // Alloca un buffer per contenere esattamente l'input
-            ByteBuffer buffer = ByteBuffer.allocateDirect(input.length);
-            // inserisce nel buffer
-            buffer.put(input);
-            // passa in modalità lettura
-            buffer.flip();
-            try {
-                while(buffer.hasRemaining())
-                    scritturaHT.write(buffer);
-            } catch (IOException e) {
-                // Errore in Scrittura
-                e.printStackTrace();
-            }
-            finally {
-                try {
-                    scritturaHT.close();
-                    serverSocket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            System.err.println("Chiusura Server:: Attendo fine ThreadPoolExecutor");
-            // Termino ThreadPoolExecutor
-            executor.shutdown();
-            System.err.println("Chiusura Server:: Terminato.");
-        }));
-
         // LISTENER :: Mi preparo a gestire richieste TCP
-        serverSocket.socket().bind(new InetSocketAddress(11223));
+        ServerSocketChannel serverSocket = ServerSocketChannel.open();
+        serverSocket.socket().bind(new InetSocketAddress(InetAddress.getByName(ServerIP),11223));
         serverSocket.configureBlocking(false);
         // Registro la serverSocket sul selector solo in accept
         serverSelector = Selector.open();
@@ -172,34 +131,47 @@ public class TuringServer {
             }
             // Solo un Signal puo' interrompere l'esecuzione
         }
-    }
 
-    static String getMulticastAddress(Documento d){
-        String addr = docAddress.get(d);
-        if(addr == null){
-            addr = "239.1.1.";
-            if(stackOne.isEmpty()){
-                    System.err.println("Non sono disponibili indirizzi di multicast.");
-                    return null;
-            }else{
-                addr = addr+stackOne.pollFirst();
-            }
-        }
-        docAddress.put(d,addr);
-        System.err.println("Assegnato a documento: "+d.getNomefile()+" indirizzo multicast: "+addr);
-        return addr;
-    }
-
-    static void reuseMulticastAddress(Documento d){
-        for(int i=1;i<d.getNumsezioni();i++){
-            if(d.getEditingUser(i) != null)
+        // Handler Terminazione server
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            usersHandler.setLogout();
+            System.err.println("Chiusura Server:: Conservo HashMap.");
+            // Conservo HT Utenti
+            FileChannel scritturaHT;
+            try {
+                scritturaHT = FileChannel.open(Paths.get("DATA/HashMap.json").toAbsolutePath(),
+                        StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING,StandardOpenOption.WRITE);
+            } catch (IOException e) {
+                e.printStackTrace();
                 return;
-        }
-        String addr = docAddress.remove(d);
-        if(addr == null)
-            return;
-        String[] vett = addr.split("\\.");
-        stackOne.push(Integer.parseInt(vett[3]));
-        System.err.println("Rimosso a documento: "+d.getNomefile()+" indirizzo multicast: "+addr);
+            }
+            // Crea un stringa json dell'oggetto e lo converte in un array di byte
+            byte [] input = (new GsonBuilder().create()).toJson(usersHandler).getBytes();
+            // Alloca un buffer per contenere esattamente l'input
+            ByteBuffer buffer = ByteBuffer.allocateDirect(input.length);
+            // inserisce nel buffer
+            buffer.put(input);
+            // passa in modalità lettura
+            buffer.flip();
+            try {
+                while(buffer.hasRemaining())
+                    scritturaHT.write(buffer);
+            } catch (IOException e) {
+                // Errore in Scrittura
+                e.printStackTrace();
+            }
+            finally {
+                try {
+                    scritturaHT.close();
+                    serverSocket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            System.err.println("Chiusura Server:: Attendo fine ThreadPoolExecutor");
+            // Termino ThreadPoolExecutor
+            executor.shutdown();
+            System.err.println("Chiusura Server:: Terminato.");
+        }));
     }
 }

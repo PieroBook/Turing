@@ -8,21 +8,18 @@ import java.rmi.RemoteException;
 class Registrazione extends Frame {
     // Thread RMI
     private Thread rmiInstauration;
-    private Frame padre;
     private Button conferma,annulla;
     private TextField nome,cognome,nomeutente,password;
     private Checkbox chiaro;
 
-    Registrazione(Login l){
+    Registrazione(Login padre){
         // Setting Frame
         super("Turing - Registrazione");
         setSize(420,200);
-        setLocation(l.getLocation());
+        setLocation(padre.getLocation());
         setVisible(true);
         setResizable(Boolean.FALSE);
         setLayout(null);
-        // Frame padre
-        this.padre = l;
         // Creo label
         Label name = new Label("Nome");
         Label surname = new Label("Cognome");
@@ -76,7 +73,7 @@ class Registrazione extends Frame {
             public void windowClosed(WindowEvent e) {
                 // Apro finistra Registrazione
                 rmiInstauration.interrupt();
-                l.setVisible(Boolean.TRUE);
+                padre.setVisible(Boolean.TRUE);
             }
         });
 

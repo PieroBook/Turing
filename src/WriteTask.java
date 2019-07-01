@@ -63,7 +63,7 @@ public class WriteTask implements Runnable{
                     if(useredit == null){
                         // Modifica possibile, invio esito positivo e file
                         List<String> lst = new ArrayList<>();
-                        lst.add(TuringServer.getMulticastAddress(d));
+                        lst.add(Utility.getMulticastAddress(d));
                         Utility.sendResponse(daServire, new RispostaTCP(0,null,lst),richiesta);
                         try {
                             Utility.inviaDocumento(daServire,d,richiesta.getNumsezioni());
@@ -217,7 +217,7 @@ public class WriteTask implements Runnable{
                     System.out.println("L'utente: "+richiesta.getUsername()+" ha terminato edit documento: "+
                             richiesta.getNomefile());
                     // Metodo per il riuso degli indirizzi multicast non più assegnati
-                    TuringServer.reuseMulticastAddress(d);
+                    Utility.reuseMulticastAddress(d);
                 }else{
                     // L'utente in questione non stava modificando la sezione
                     resp = new RispostaTCP(-2);

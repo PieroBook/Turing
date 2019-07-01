@@ -15,7 +15,7 @@ public class RmiClientInstauration implements Runnable {
         while(retry){
             retry = false;
             try {
-                r = LocateRegistry.getRegistry(Registry.REGISTRY_PORT);
+                r = LocateRegistry.getRegistry(Turing.ServerIP,Registry.REGISTRY_PORT);
                 RemoteObject = r.lookup("Server-Turing");
             } catch (RemoteException | NotBoundException ignore) {
                 retry = true;
